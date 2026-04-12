@@ -1,6 +1,4 @@
-use alloc::vec::Vec;
-
-use crate::object::{Object, ObjectId, ObjectOperation, ObjectResult, ObjectType, OperationError, OperationHandler};
+use crate::object::{Object, ObjectData, ObjectId, ObjectOperation, ObjectResult, OperationError, OperationHandler};
 
 pub struct ObjectManager {
     objects: alloc::collections::BTreeMap<ObjectId, Object>,
@@ -12,10 +10,10 @@ impl ObjectManager {
         ObjectManager { objects: alloc::collections::BTreeMap::new(), next_id: 1 }
     }
 
-    pub fn register_object(&mut self, handler: OperationHandler, object_type: ObjectType) -> ObjectId {
+    pub fn register_object(&mut self, handler: OperationHandler, name: &'static str) -> ObjectId {
         let id = self.next_id;
         self.next_id += 1;
-        self.objects.insert(id, Object::new(id, object_type, handler));
+        self.objects.insert(id, Object::new(id, name, handler));
         id
     }
 
@@ -27,18 +25,15 @@ impl ObjectManager {
         self.objects.get_mut(&id)
     }
 
-    pub fn get_objects_for_type(&self, object_type: ObjectType) -> Vec<ObjectId> {
-        self.objects.iter()
-            .filter(|(_, obj)| obj.object_type() == object_type)
-            .map(|(&id, _)| id)
-            .collect()
+    pub fn resolve_object(&self, name: &'static str) -> Option<ObjectId> {
+        self.objects.values().find(|obj| obj.name() == name).map(Object::id)
     }
 
     pub fn unregister_object(&mut self, id: ObjectId) {
         self.objects.remove(&id);
     }
 
-    pub fn handle_operation(&mut self, id: ObjectId, operation: ObjectOperation, data: Option<*const [u8]>) -> ObjectResult<Option<*const [u8]>> {
+    pub fn handle_operation(&mut self, id: ObjectId, operation: ObjectOperation, data: ObjectData) -> ObjectResult<ObjectData> {
         if let Some(obj) = self.objects.get(&id) {
             obj.handle_operation(operation, data)
         } else {

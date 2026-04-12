@@ -42,47 +42,35 @@ impl core::convert::TryFrom<usize> for ObjectOperation {
     }
 }
 
-#[repr(usize)]
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ObjectType {
-    Console = 0,
-}
-
-impl core::convert::TryFrom<usize> for ObjectType {
-    type Error = ();
-
-    fn try_from(value: usize) -> Result<Self, Self::Error> {
-        match value {
-            0 => Ok(ObjectType::Console),
-            _ => Err(()),
-        }
-    }
+pub enum ObjectData {
+    Bytes(*const u8, usize),
+    None,
 }
 
 pub type ObjectId = u64;
 pub type ObjectResult<T> = Result<T, OperationError>;
-pub type OperationHandler = fn(ObjectId, ObjectOperation, Option<*const [u8]>) -> ObjectResult<Option<*const [u8]>>;
+pub type OperationHandler = fn(&Object, ObjectOperation, ObjectData) -> ObjectResult<ObjectData>;
 
 pub struct Object {
     id: ObjectId,
     handler: OperationHandler,
-    object_type: ObjectType,
+    name: &'static str,
 }
 
 impl Object {
-    pub fn new(id: ObjectId, object_type: ObjectType, handler: OperationHandler) -> Self {
-        Object { id, handler, object_type }
+    pub fn new(id: ObjectId, name: &'static str, handler: OperationHandler) -> Self {
+        Object { id, handler, name }
     }
 
     pub fn id(&self) -> ObjectId {
         self.id
     }
 
-    pub fn object_type(&self) -> ObjectType {
-        self.object_type
+    pub fn name(&self) -> &'static str {
+        self.name
     }
 
-    pub fn handle_operation(&self, operation: ObjectOperation, data: Option<*const [u8]>) -> ObjectResult<Option<*const [u8]>> {
-        (self.handler)(self.id, operation, data)
+    pub fn handle_operation(&self, operation: ObjectOperation, data: ObjectData) -> ObjectResult<ObjectData> {
+        (self.handler)(self, operation, data)
     }
 }
