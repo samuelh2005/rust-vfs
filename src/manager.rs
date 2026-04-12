@@ -25,7 +25,7 @@ impl ObjectManager {
         self.objects.get_mut(&id)
     }
 
-    pub fn resolve_object(&self, name: &'static str) -> Option<ObjectId> {
+    pub fn resolve_object(&self, name: &str) -> Option<ObjectId> {
         self.objects.values().find(|obj| obj.name() == name).map(Object::id)
     }
 
@@ -33,7 +33,7 @@ impl ObjectManager {
         self.objects.remove(&id);
     }
 
-    pub fn handle_operation(&mut self, id: ObjectId, operation: ObjectOperation, data: ObjectData) -> ObjectResult<ObjectData> {
+    pub fn handle_operation(&self, id: ObjectId, operation: ObjectOperation, data: ObjectData) -> ObjectResult<ObjectData> {
         if let Some(obj) = self.objects.get(&id) {
             obj.handle_operation(operation, data)
         } else {
