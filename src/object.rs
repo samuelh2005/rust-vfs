@@ -47,23 +47,18 @@ pub enum ObjectData {
     None,
 }
 
-pub type ObjectId = u64;
+pub type ObjectHandle = u64;
 pub type ObjectResult<T> = Result<T, OperationError>;
 pub type OperationHandler = fn(&Object, ObjectOperation, ObjectData) -> ObjectResult<ObjectData>;
 
 pub struct Object {
-    id: ObjectId,
     handler: OperationHandler,
     name: &'static str,
 }
 
 impl Object {
-    pub fn new(id: ObjectId, name: &'static str, handler: OperationHandler) -> Self {
-        Object { id, handler, name }
-    }
-
-    pub fn id(&self) -> ObjectId {
-        self.id
+    pub fn new(name: &'static str, handler: OperationHandler) -> Self {
+        Object { handler, name }
     }
 
     pub fn name(&self) -> &'static str {
