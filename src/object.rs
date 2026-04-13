@@ -27,7 +27,7 @@ impl core::convert::TryFrom<usize> for OperationError {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ObjectOperation {
     Read = 0,
-    Write = 1
+    Write = 1,
 }
 
 impl core::convert::TryFrom<usize> for ObjectOperation {
@@ -70,7 +70,11 @@ impl Object {
         self.name
     }
 
-    pub fn handle_operation(&self, operation: ObjectOperation, data: ObjectData) -> ObjectResult<ObjectData> {
+    pub fn handle_operation(
+        &self,
+        operation: ObjectOperation,
+        data: ObjectData,
+    ) -> ObjectResult<ObjectData> {
         (self.handler)(self, operation, data)
     }
 }
