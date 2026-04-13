@@ -1,7 +1,8 @@
 use alloc::boxed::Box;
 
 use crate::object::{
-    Object, ObjectData, ObjectHandle, ObjectOperation, ObjectResult, OperationError, OperationHandler,
+    Object, ObjectData, ObjectHandle, ObjectOperation, ObjectResult, OperationError,
+    OperationHandler,
 };
 
 pub struct ObjectManager {
@@ -42,6 +43,17 @@ impl ObjectManager {
             }
         }
         None
+    }
+
+    pub fn enumerate_objects(&self) -> alloc::vec::Vec<&'static str> {
+        self.objects.iter().map(|obj| obj.name()).collect()
+    }
+
+    pub fn enumerate_handles(&self) -> alloc::vec::Vec<(ObjectHandle, &'static str)> {
+        self.handles
+            .iter()
+            .map(|(id, obj)| (*id, obj.name()))
+            .collect()
     }
 
     pub fn close_object(&mut self, id: ObjectHandle) {
