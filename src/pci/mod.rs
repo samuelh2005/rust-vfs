@@ -37,35 +37,33 @@ pub struct PCIHeaderType0 {
     pub max_latency: u8,
 }
 
-pub fn enumerate_function(device_address: u64, function: u64) {
-    let header = unsafe { &*(device_address as *const PCIDeviceHeader) };
-
-    if header.vendor_id == 0xFFFF {
+pub fn enumerate_function(device_header: &PCIDeviceHeader, function_address: u64) {
+    if device_header.vendor_id == 0xFFFF {
         return;
     }
 
-    let full_header = unsafe { &*(device_address as *const PCIHeaderType0) };
+    let full_header = unsafe { &*(function_address as *const PCIHeaderType0) };
 
-    probe_drivers(&header, &full_header);
+    probe_drivers(device_header, &full_header);
 }
 
 pub fn enumerate_device(bus_address: u64, device: u64) {
     let device_address = bus_address + (device << 15);
 
-    let header = unsafe { &*(device_address as *const PCIDeviceHeader) };
+    let device_header = unsafe { &*(device_address as *const PCIDeviceHeader) };
 
-    if header.vendor_id == 0xFFFF {
+    if device_header.vendor_id == 0xFFFF {
         return;
     }
 
     // Check if multi-function device
-    let is_multifunction = (header.header_type & 0x80) != 0;
+    let is_multifunction = (device_header.header_type & 0x80) != 0;
 
     let function_count = if is_multifunction { 8 } else { 1 };
 
     for function in 0..function_count {
         let function_address = device_address + (function << 12);
-        enumerate_function(function_address, function);
+        enumerate_function(device_header, function_address);
     }
 }
 

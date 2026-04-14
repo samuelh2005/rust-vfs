@@ -1,4 +1,7 @@
 #![no_std]
+#![forbid(unused)]
+#![forbid(dead_code)]
+#![forbid(unused_must_use)]
 
 use crate::{driver::init_drivers, manager::ObjectManager};
 
