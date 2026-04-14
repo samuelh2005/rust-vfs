@@ -1,6 +1,6 @@
 #![no_std]
 
-use crate::manager::ObjectManager;
+use crate::{driver::init_drivers, manager::ObjectManager};
 
 extern crate alloc;
 
@@ -15,4 +15,5 @@ pub static OBJECT_MANAGER: spin::Once<spin::Mutex<ObjectManager>> =
 
 pub fn init() {
     OBJECT_MANAGER.call_once(|| spin::Mutex::new(ObjectManager::new()));
+    init_drivers();
 }

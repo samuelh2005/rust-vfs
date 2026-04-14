@@ -48,7 +48,7 @@ pub fn probe_drivers(pci_header: &PCIDeviceHeader, pci_function: &PCIHeaderType0
     }
 }
 
-pub fn init_drivers() {
+pub(crate) fn init_drivers() {
     let drivers = Vec::new();
     DRIVERS.call_once(|| Mutex::new(drivers));
 }
