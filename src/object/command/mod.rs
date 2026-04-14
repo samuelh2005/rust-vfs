@@ -34,5 +34,6 @@ pub enum ObjectData {
 }
 
 pub type ObjectResult<T> = Result<T, OperationError>;
-pub type ObjectCommandHandler = fn(&Object, ObjectCommandID, ObjectData) -> ObjectResult<ObjectData>;
+pub type ObjectCommandHandler =
+    fn(&Object, ObjectCommandID, ObjectData) -> ObjectResult<ObjectData>;
 pub type ObjectCommandID = usize;

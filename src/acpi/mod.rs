@@ -56,11 +56,7 @@ pub unsafe fn find_table_by_sig(
         let entry_ptr = unsafe { entries_ptr.add(i) };
         let hdr_ptr = unsafe { *entry_ptr as *const SDTHeader };
 
-        let sig = unsafe {
-            core::ptr::read_unaligned(
-                core::ptr::addr_of!((*hdr_ptr).signature)
-            )
-        };
+        let sig = unsafe { core::ptr::read_unaligned(core::ptr::addr_of!((*hdr_ptr).signature)) };
 
         if sig == signature {
             return Some(unsafe { &*hdr_ptr });

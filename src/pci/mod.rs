@@ -1,4 +1,7 @@
-use crate::{acpi::{MCFGEntry, MCFGHeader}, driver::probe_drivers};
+use crate::{
+    acpi::{MCFGEntry, MCFGHeader},
+    driver::probe_drivers,
+};
 
 #[repr(C, packed)]
 #[derive(Debug, Copy, Clone)]
@@ -83,8 +86,7 @@ pub fn enumerate_pci(mcfg: *const MCFGHeader) {
         / core::mem::size_of::<MCFGEntry>();
 
     let entries_ptr = unsafe {
-        (mcfg as *const _ as *const u8)
-            .add(core::mem::size_of::<MCFGHeader>()) as *const MCFGEntry
+        (mcfg as *const _ as *const u8).add(core::mem::size_of::<MCFGHeader>()) as *const MCFGEntry
     };
 
     for i in 0..entries {

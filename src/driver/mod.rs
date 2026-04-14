@@ -1,10 +1,10 @@
-use spin::{Mutex, Once};
 use alloc::{boxed::Box, vec::Vec};
+use spin::{Mutex, Once};
 
+use crate::OBJECT_MANAGER;
+use crate::object::command::ObjectCommandHandler;
 use crate::object::types::class_type_from_code;
 use crate::pci::{PCIDeviceHeader, PCIHeaderType0};
-use crate::object::command::ObjectCommandHandler;
-use crate::OBJECT_MANAGER;
 
 pub trait PciDriver: Send {
     fn supports(&self, vendor_id: u16, device_id: u16, class: u8, subclass: u8) -> bool;
@@ -12,7 +12,12 @@ pub trait PciDriver: Send {
     /// Called when a matching device is found. Return an `OperationHandler`
     /// to expose the device via the VFS object manager, or `None` if the
     /// driver wants to handle the device without exposing an object.
-    fn init(&self, name: &'static str, pci: &PCIDeviceHeader, func: &PCIHeaderType0) -> Option<ObjectCommandHandler>;
+    fn init(
+        &self,
+        name: &'static str,
+        pci: &PCIDeviceHeader,
+        func: &PCIHeaderType0,
+    ) -> Option<ObjectCommandHandler>;
 }
 
 pub static DRIVERS: Once<Mutex<Vec<Box<dyn PciDriver>>>> = Once::new();
@@ -29,7 +34,9 @@ pub fn probe_drivers(pci_header: &PCIDeviceHeader, pci_function: &PCIHeaderType0
     let class = pci_header.class_code;
     let subclass = pci_header.subclass;
 
-    let manager_mutex = OBJECT_MANAGER.get().expect("Object manager not initialized");
+    let manager_mutex = OBJECT_MANAGER
+        .get()
+        .expect("Object manager not initialized");
     let mut manager = manager_mutex.lock();
 
     for driver in drivers.iter() {

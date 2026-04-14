@@ -1,16 +1,9 @@
-use alloc::{
-    boxed::Box,
-    collections::BTreeMap,
-    format,
-    vec::Vec,
-};
+use alloc::{boxed::Box, collections::BTreeMap, format, vec::Vec};
 
 use crate::object::{
-    command::{
-        ObjectCommandHandler, ObjectCommandID, ObjectData, ObjectResult, OperationError,
-    },
-    types::ObjectType,
     Object, ObjectHandle,
+    command::{ObjectCommandHandler, ObjectCommandID, ObjectData, ObjectResult, OperationError},
+    types::ObjectType,
 };
 
 pub struct ObjectManager {
@@ -39,7 +32,8 @@ impl ObjectManager {
         *idx += 1;
 
         let name_static: &'static str = Box::leak(name_owned.into_boxed_str());
-        self.objects.push(Box::new(Object::new(name_static, obj_type, None)));
+        self.objects
+            .push(Box::new(Object::new(name_static, obj_type, None)));
 
         name_static
     }
@@ -99,7 +93,13 @@ impl ObjectManager {
         let other_handles: Vec<ObjectHandle> = self
             .handles
             .iter()
-            .filter_map(|(handle, idx)| if *idx == removed_idx { Some(*handle) } else { None })
+            .filter_map(|(handle, idx)| {
+                if *idx == removed_idx {
+                    Some(*handle)
+                } else {
+                    None
+                }
+            })
             .collect();
 
         for handle in other_handles {
