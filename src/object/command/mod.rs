@@ -1,6 +1,7 @@
 use crate::object::Object;
 
 pub mod display;
+pub mod network;
 
 #[repr(usize)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

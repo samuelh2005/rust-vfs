@@ -12,7 +12,7 @@ pub trait PciDriver: Send {
     /// Called when a matching device is found. Return an `OperationHandler`
     /// to expose the device via the VFS object manager, or `None` if the
     /// driver wants to handle the device without exposing an object.
-    fn init(&self, pci: &PCIDeviceHeader, func: &PCIHeaderType0) -> Option<ObjectCommandHandler>;
+    fn init(&self, name: &'static str, pci: &PCIDeviceHeader, func: &PCIHeaderType0) -> Option<ObjectCommandHandler>;
 }
 
 pub static DRIVERS: Once<Mutex<Vec<Box<dyn PciDriver>>>> = Once::new();
@@ -29,20 +29,19 @@ pub fn probe_drivers(pci_header: &PCIDeviceHeader, pci_function: &PCIHeaderType0
     let class = pci_header.class_code;
     let subclass = pci_header.subclass;
 
+    let manager_mutex = OBJECT_MANAGER.get().expect("Object manager not initialized");
+    let mut manager = manager_mutex.lock();
+
     for driver in drivers.iter() {
         if driver.supports(vendor, device, class, subclass) {
-            if let Some(handler) = driver.init(pci_header, pci_function) {
+            // Create the canonical `<type><count>` name. Determine the
+            // next unused numeric index for this class label by
+            // inspecting registered object names in the manager.
+            let class_type = class_type_from_code(class);
 
-                // Create the canonical `<type><count>` name. Determine the
-                // next unused numeric index for this class label by
-                // inspecting registered object names in the manager.
-                let class_type = class_type_from_code(class);
-
-                let manager_mutex = OBJECT_MANAGER.get().expect("Object manager not initialized");
-                let mut manager = manager_mutex.lock();
-
-                // Use the manager's efficient allocator for type-based names.
-                let _name_static = manager.register_object(handler, class_type);
+            let name_static = manager.register_object(class_type);
+            if let Some(handler) = driver.init(name_static, pci_header, pci_function) {
+                manager.set_object_handler(name_static, handler);
             }
         }
     }
