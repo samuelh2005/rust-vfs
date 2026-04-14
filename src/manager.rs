@@ -2,12 +2,13 @@ use alloc::boxed::Box;
 
 use crate::object::{
     Object, ObjectData, ObjectHandle, ObjectOperation, ObjectResult, OperationError,
-    OperationHandler,
+    OperationHandler, ObjectType,
 };
 
 pub struct ObjectManager {
     objects: alloc::vec::Vec<&'static Object>,
     handles: alloc::collections::BTreeMap<ObjectHandle, &'static Object>,
+    type_counters: alloc::collections::BTreeMap<ObjectType, usize>,
     next_id: ObjectHandle,
 }
 
@@ -16,13 +17,32 @@ impl ObjectManager {
         ObjectManager {
             objects: alloc::vec::Vec::new(),
             handles: alloc::collections::BTreeMap::new(),
+            type_counters: alloc::collections::BTreeMap::new(),
             next_id: 1,
         }
     }
 
-    pub fn register_object(&mut self, handler: OperationHandler, name: &'static str) {
-        let obj = Box::leak(Box::new(Object::new(name, handler)));
+    /// Register an object with an auto-allocated canonical `<type><count>` name.
+    /// The caller MUST supply an `ObjectType`. The manager allocates the next
+    /// numeric index for the type and returns the leaked `'static` name.
+    pub fn register_object(&mut self, handler: OperationHandler, obj_type: ObjectType) -> &'static str {
+        // Determine next index for this object type
+        let idx = match self.type_counters.get(&obj_type) {
+            Some(v) => *v,
+            None => 0,
+        };
+
+        // Update counter for next allocation
+        self.type_counters.insert(obj_type, idx + 1);
+
+        // Allocate the name and leak it to `'static` for manager ownership
+        let name_owned = alloc::format!("{}{}", obj_type.label(), idx);
+        let name_static: &'static str = Box::leak(name_owned.into_boxed_str());
+
+        let obj = Box::leak(Box::new(Object::new(name_static, obj_type, handler)));
         self.objects.push(obj);
+
+        name_static
     }
 
     pub fn get_object(&self, id: ObjectHandle) -> Option<&'static Object> {
