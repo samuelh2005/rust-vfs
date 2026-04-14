@@ -1,33 +1,10 @@
 use spin::{Mutex, Once};
 use alloc::{boxed::Box, vec::Vec};
 
+use crate::object::types::class_type_from_code;
 use crate::pci::{PCIDeviceHeader, PCIHeaderType0};
-use crate::object::{OperationHandler, ObjectType};
+use crate::object::command::OperationHandler;
 use crate::OBJECT_MANAGER;
-fn class_type_from_code(class: u8) -> ObjectType {
-    match class {
-        0x00 => ObjectType::Unclassified,
-        0x01 => ObjectType::Storage,
-        0x02 => ObjectType::Network,
-        0x03 => ObjectType::Display,
-        0x04 => ObjectType::Multimedia,
-        0x05 => ObjectType::Memory,
-        0x06 => ObjectType::Bridge,
-        0x07 => ObjectType::Comm,
-        0x08 => ObjectType::System,
-        0x09 => ObjectType::Input,
-        0x0A => ObjectType::Docking,
-        0x0B => ObjectType::Processor,
-        0x0C => ObjectType::SerialBus,
-        0x0D => ObjectType::Wireless,
-        0x0E => ObjectType::Io,
-        0x0F => ObjectType::Satcom,
-        0x10 => ObjectType::Crypto,
-        0x11 => ObjectType::Data,
-        0xFF => ObjectType::Vendor,
-        _ => ObjectType::Unknown,
-    }
-}
 
 pub trait PciDriver: Send {
     fn supports(&self, vendor_id: u16, device_id: u16, class: u8, subclass: u8) -> bool;

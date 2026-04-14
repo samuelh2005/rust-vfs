@@ -1,9 +1,7 @@
 use alloc::boxed::Box;
 
-use crate::object::{
-    Object, ObjectData, ObjectHandle, ObjectOperation, ObjectResult, OperationError,
-    OperationHandler, ObjectType,
-};
+use crate::object::{Object, ObjectHandle, command::{ObjectData, ObjectOperation, ObjectResult, OperationError, OperationHandler}, types::ObjectType};
+
 
 pub struct ObjectManager {
     objects: alloc::vec::Vec<&'static Object>,
