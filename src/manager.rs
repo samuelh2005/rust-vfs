@@ -1,6 +1,6 @@
 use alloc::boxed::Box;
 
-use crate::object::{Object, ObjectHandle, command::{ObjectData, ObjectOperation, ObjectResult, OperationError, OperationHandler}, types::ObjectType};
+use crate::object::{Object, ObjectHandle, command::{ObjectData, ObjectCommandID, ObjectResult, OperationError, ObjectCommandHandler}, types::ObjectType};
 
 
 pub struct ObjectManager {
@@ -23,7 +23,7 @@ impl ObjectManager {
     /// Register an object with an auto-allocated canonical `<type><count>` name.
     /// The caller MUST supply an `ObjectType`. The manager allocates the next
     /// numeric index for the type and returns the leaked `'static` name.
-    pub fn register_object(&mut self, handler: OperationHandler, obj_type: ObjectType) -> &'static str {
+    pub fn register_object(&mut self, handler: ObjectCommandHandler, obj_type: ObjectType) -> &'static str {
         // Determine next index for this object type
         let idx = match self.type_counters.get(&obj_type) {
             Some(v) => *v,
@@ -82,14 +82,14 @@ impl ObjectManager {
         self.handles.remove(&id);
     }
 
-    pub fn handle_operation(
+    pub fn handle_command(
         &self,
         id: ObjectHandle,
-        operation: ObjectOperation,
+        command: ObjectCommandID,
         data: ObjectData,
     ) -> ObjectResult<ObjectData> {
         if let Some(obj) = self.handles.get(&id) {
-            obj.handle_operation(operation, data)
+            obj.handle_command(command, data)
         } else {
             Err(OperationError::NotFound)
         }

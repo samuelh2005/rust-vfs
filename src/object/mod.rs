@@ -1,4 +1,4 @@
-use crate::object::{command::{ObjectData, ObjectOperation, ObjectResult, OperationHandler}, types::ObjectType};
+use crate::object::{command::{ObjectData, ObjectCommandID, ObjectResult, ObjectCommandHandler}, types::ObjectType};
 
 pub mod command;
 pub mod types;
@@ -6,13 +6,13 @@ pub mod types;
 pub type ObjectHandle = u64;
 
 pub struct Object {
-    handler: OperationHandler,
+    handler: ObjectCommandHandler,
     name: &'static str,
     obj_type: ObjectType,
 }
 
 impl Object {
-    pub fn new(name: &'static str, obj_type: ObjectType, handler: OperationHandler) -> Self {
+    pub fn new(name: &'static str, obj_type: ObjectType, handler: ObjectCommandHandler) -> Self {
         Object { handler, name, obj_type }
     }
 
@@ -24,11 +24,11 @@ impl Object {
         self.obj_type
     }
 
-    pub fn handle_operation(
+    pub fn handle_command(
         &self,
-        operation: ObjectOperation,
+        command: ObjectCommandID,
         data: ObjectData,
     ) -> ObjectResult<ObjectData> {
-        (self.handler)(self, operation, data)
+        (self.handler)(self, command, data)
     }
 }

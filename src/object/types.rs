@@ -19,7 +19,6 @@ pub enum ObjectType {
     Crypto,
     Data,
     Vendor,
-    Console,
     Unknown,
 }
 
@@ -45,7 +44,6 @@ impl ObjectType {
             ObjectType::Crypto => "crypto",
             ObjectType::Data => "data",
             ObjectType::Vendor => "vendor",
-            ObjectType::Console => "console",
             ObjectType::Unknown => "unknown",
         }
     }

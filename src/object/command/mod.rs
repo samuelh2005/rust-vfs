@@ -1,5 +1,7 @@
 use crate::object::Object;
 
+pub mod display;
+
 #[repr(usize)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum OperationError {
@@ -25,29 +27,11 @@ impl core::convert::TryFrom<usize> for OperationError {
     }
 }
 
-#[repr(usize)]
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ObjectOperation {
-    Read = 0,
-    Write = 1,
-}
-
-impl core::convert::TryFrom<usize> for ObjectOperation {
-    type Error = ();
-
-    fn try_from(value: usize) -> Result<Self, Self::Error> {
-        match value {
-            0 => Ok(ObjectOperation::Read),
-            1 => Ok(ObjectOperation::Write),
-            _ => Err(()),
-        }
-    }
-}
-
 pub enum ObjectData {
     Bytes(*const u8, usize),
     None,
 }
 
 pub type ObjectResult<T> = Result<T, OperationError>;
-pub type OperationHandler = fn(&Object, ObjectOperation, ObjectData) -> ObjectResult<ObjectData>;
+pub type ObjectCommandHandler = fn(&Object, ObjectCommandID, ObjectData) -> ObjectResult<ObjectData>;
+pub type ObjectCommandID = usize;

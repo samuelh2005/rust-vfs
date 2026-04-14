@@ -3,7 +3,7 @@ use alloc::{boxed::Box, vec::Vec};
 
 use crate::object::types::class_type_from_code;
 use crate::pci::{PCIDeviceHeader, PCIHeaderType0};
-use crate::object::command::OperationHandler;
+use crate::object::command::ObjectCommandHandler;
 use crate::OBJECT_MANAGER;
 
 pub trait PciDriver: Send {
@@ -12,7 +12,7 @@ pub trait PciDriver: Send {
     /// Called when a matching device is found. Return an `OperationHandler`
     /// to expose the device via the VFS object manager, or `None` if the
     /// driver wants to handle the device without exposing an object.
-    fn init(&self, pci: &PCIDeviceHeader, func: &PCIHeaderType0) -> Option<OperationHandler>;
+    fn init(&self, pci: &PCIDeviceHeader, func: &PCIHeaderType0) -> Option<ObjectCommandHandler>;
 }
 
 pub static DRIVERS: Once<Mutex<Vec<Box<dyn PciDriver>>>> = Once::new();
