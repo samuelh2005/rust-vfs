@@ -78,11 +78,11 @@ impl ObjectManager {
             .collect()
     }
 
-    pub fn enumerate_interrupt_handlers(&self) -> Vec<(&'static str, Vec<u32>)> {
+    pub fn enumerate_interrupt_handlers(&self) -> Vec<(&'static str, BTreeMap<u32, InterruptHandler>)> {
         self.interrupt_handlers
             .iter()
             .filter_map(|(idx, handlers)| {
-                self.objects.get(*idx).map(|obj| (obj.name(), handlers.keys().cloned().collect()))
+                self.objects.get(*idx).map(|obj| (obj.name(), handlers.clone()))
             })
             .collect()
     }
