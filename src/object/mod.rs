@@ -12,6 +12,7 @@ pub struct Object {
     handler: ObjectCommandHandler,
     name: &'static str,
     obj_type: ObjectType,
+    context: Option<usize>,
 }
 
 impl Object {
@@ -24,6 +25,21 @@ impl Object {
             handler,
             name,
             obj_type,
+            context: None,
+        }
+    }
+
+    pub fn new_with_context(
+        name: &'static str,
+        obj_type: ObjectType,
+        handler: ObjectCommandHandler,
+        context: usize,
+    ) -> Self {
+        Object {
+            handler,
+            name,
+            obj_type,
+            context: Some(context),
         }
     }
 
@@ -33,6 +49,10 @@ impl Object {
 
     pub fn obj_type(&self) -> ObjectType {
         self.obj_type
+    }
+
+    pub fn context(&self) -> Option<usize> {
+        self.context
     }
 
     pub fn handle_command(

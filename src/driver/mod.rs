@@ -55,7 +55,11 @@ pub fn probe_drivers(pci_header: &PCIDeviceHeader, pci_function: &PCIHeaderType0
             let response = driver.init(name_static, pci_header, pci_function);
             if let Ok(response) = response {
                 info!("Initializing object {} for PCI device {:04x}:{:04x}", name_static, vendor, device);
-                let obj = Object::new(name_static, class_type, response.command_handler);
+                let obj = if let Some(context) = response.context {
+                    Object::new_with_context(name_static, class_type, response.command_handler, context)
+                } else {
+                    Object::new(name_static, class_type, response.command_handler)
+                };
                 manager.register_object(obj, response.interrupt_handlers);
             }
         }

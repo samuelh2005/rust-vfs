@@ -18,4 +18,5 @@ pub type InterruptHandler = fn(
 pub struct DriverResponse {
     pub command_handler: ObjectCommandHandler,
     pub interrupt_handlers: BTreeMap<u32, InterruptHandler>,
+    pub context: Option<usize>,
 }
