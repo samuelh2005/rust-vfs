@@ -1,4 +1,5 @@
 use alloc::{boxed::Box, collections::BTreeMap, format, vec::Vec};
+use log::{debug, info};
 
 use crate::{driver::responses::InterruptHandler, object::{
     Object, ObjectHandle,
@@ -39,6 +40,8 @@ impl ObjectManager {
             panic!("Object with name '{}' already exists", name);
         }
 
+        info!("Registering object: {} (type: {:?})", name, obj_type);
+
         self.objects.push(Box::new(object));
 
         self.interrupt_handlers.insert(self.objects.len() - 1, interrupt_handlers);
@@ -62,6 +65,8 @@ impl ObjectManager {
 
         let id = self.next_id;
         self.next_id += 1;
+
+        debug!("Opening object: {} (handle: {})", name, id);
 
         self.handles.insert(id, idx);
         Some(id)
@@ -88,11 +93,13 @@ impl ObjectManager {
     }
 
     pub fn close_object(&mut self, id: ObjectHandle) {
+        debug!("Closing object handle: {}", id);
         self.handles.remove(&id);
     }
 
     pub fn unregister_object(&mut self, name: &str) {
         if let Some(idx) = self.objects.iter().position(|obj| obj.name() == name) {
+            info!("Unregistering object: {}", name);
             self.objects.remove(idx);
             self.handles.retain(|_, &mut v| v != idx);
             self.interrupt_handlers.remove(&idx);

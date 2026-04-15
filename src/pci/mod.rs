@@ -1,3 +1,5 @@
+use log::{debug, info};
+
 use crate::{
     acpi::{MCFGEntry, MCFGHeader},
     driver::probe_drivers,
@@ -78,6 +80,7 @@ pub fn enumerate_bus(base_address: u64, start_bus: u8, end_bus: u8) {
 }
 
 pub fn enumerate_pci(mcfg: *const MCFGHeader) {
+    info!("Starting PCI enumeration via MCFG...");
     let mcfg = unsafe { &*mcfg };
 
     let entries = (mcfg.header.length as usize - core::mem::size_of::<MCFGHeader>())
@@ -90,10 +93,17 @@ pub fn enumerate_pci(mcfg: *const MCFGHeader) {
     for i in 0..entries {
         let entry = unsafe { &*entries_ptr.add(i) };
 
+        let segment = entry.segment_group_number;
+        let start_bus = entry.start_bus_number;
+        let end_bus = entry.end_bus_number;
+
+        debug!("Enumerating PCI Segment {} Bus {} to {}", segment, start_bus, end_bus);
+
         enumerate_bus(
             entry.base_address,
-            entry.start_bus_number,
-            entry.end_bus_number,
+            start_bus,
+            end_bus,
         );
     }
+    info!("PCI enumeration complete.");
 }

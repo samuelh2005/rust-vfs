@@ -1,4 +1,5 @@
 use alloc::{boxed::Box, vec::Vec};
+use log::{debug, info};
 use spin::{Mutex, Once};
 
 pub mod responses;
@@ -44,6 +45,7 @@ pub fn probe_drivers(pci_header: &PCIDeviceHeader, pci_function: &PCIHeaderType0
 
     for driver in drivers.iter() {
         if driver.supports(vendor, device, class, subclass) {
+            debug!("Probing PCI device {:04x}:{:04x} (class: {:02x}, subclass: {:02x})", vendor, device, class, subclass);
             // Create the canonical `<type><count>` name. Determine the
             // next unused numeric index for this class label by
             // inspecting registered object names in the manager.
@@ -52,6 +54,7 @@ pub fn probe_drivers(pci_header: &PCIDeviceHeader, pci_function: &PCIHeaderType0
 
             let response = driver.init(name_static, pci_header, pci_function);
             if let Ok(response) = response {
+                info!("Initializing object {} for PCI device {:04x}:{:04x}", name_static, vendor, device);
                 let obj = Object::new(name_static, class_type, response.command_handler);
                 manager.register_object(obj, response.interrupt_handlers);
             }
