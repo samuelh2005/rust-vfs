@@ -1,15 +1,16 @@
 use alloc::{boxed::Box, collections::BTreeMap, format, vec::Vec};
 
-use crate::object::{
+use crate::{driver::responses::InterruptHandler, object::{
     Object, ObjectHandle,
-    command::{ObjectCommandHandler, ObjectCommandID, ObjectData, ObjectResult, OperationError},
+    command::{ObjectCommandID, ObjectData, ObjectResult, OperationError},
     types::ObjectType,
-};
+}};
 
 pub struct ObjectManager {
     objects: Vec<Box<Object>>,
     handles: BTreeMap<ObjectHandle, usize>,
     type_counters: BTreeMap<ObjectType, usize>,
+    interrupt_handlers: BTreeMap<usize, BTreeMap<u32, InterruptHandler>>,
     next_id: ObjectHandle,
 }
 
@@ -19,32 +20,31 @@ impl ObjectManager {
             objects: Vec::new(),
             handles: BTreeMap::new(),
             type_counters: BTreeMap::new(),
+            interrupt_handlers: BTreeMap::new(),
             next_id: 1,
         }
     }
 
-    /// Register an object with an auto-allocated canonical `<type><count>` name.
-    /// The name is leaked because `Object` stores `&'static str`.
-    pub fn register_object(&mut self, obj_type: ObjectType) -> &'static str {
-        let idx = self.type_counters.entry(obj_type).or_insert(0);
-
-        let name_owned = format!("{}{}", obj_type.label(), *idx);
-        *idx += 1;
-
-        let name_static: &'static str = Box::leak(name_owned.into_boxed_str());
-        self.objects
-            .push(Box::new(Object::new(name_static, obj_type, None)));
-
-        name_static
+    pub fn get_next_name(&self, obj_type: ObjectType) -> &'static str {
+        let idx = self.type_counters.get(&obj_type).unwrap_or(&0);
+        let name_owned = format!("{}{}", obj_type.label(), idx);
+        Box::leak(name_owned.into_boxed_str())
     }
 
-    pub fn set_object_handler(&mut self, name: &str, handler: ObjectCommandHandler) -> bool {
-        if let Some(obj) = self.objects.iter_mut().find(|obj| obj.name() == name) {
-            obj.set_handler(handler);
-            true
-        } else {
-            false
+    pub fn register_object(&mut self, object: Object, interrupt_handlers: BTreeMap<u32, InterruptHandler>) {
+        let obj_type = object.obj_type();
+        let name = object.name();
+
+        if self.objects.iter().any(|obj| obj.name() == name) {
+            panic!("Object with name '{}' already exists", name);
         }
+
+        self.objects.push(Box::new(object));
+
+        self.interrupt_handlers.insert(self.objects.len() - 1, interrupt_handlers);
+
+        let counter = self.type_counters.entry(obj_type).or_insert(0);
+        *counter += 1;
     }
 
     pub fn get_object(&self, id: ObjectHandle) -> Option<&Object> {
@@ -78,45 +78,24 @@ impl ObjectManager {
             .collect()
     }
 
+    pub fn enumerate_interrupt_handlers(&self) -> Vec<(&'static str, Vec<u32>)> {
+        self.interrupt_handlers
+            .iter()
+            .filter_map(|(idx, handlers)| {
+                self.objects.get(*idx).map(|obj| (obj.name(), handlers.keys().cloned().collect()))
+            })
+            .collect()
+    }
+
     pub fn close_object(&mut self, id: ObjectHandle) {
         self.handles.remove(&id);
     }
 
-    /// Removes the object owned by this handle and invalidates any other handles
-    /// that point at the same object.
-    pub fn unregister_object(&mut self, id: ObjectHandle) {
-        let Some(removed_idx) = self.handles.remove(&id) else {
-            return;
-        };
-
-        // Remove all other handles to the same object.
-        let other_handles: Vec<ObjectHandle> = self
-            .handles
-            .iter()
-            .filter_map(|(handle, idx)| {
-                if *idx == removed_idx {
-                    Some(*handle)
-                } else {
-                    None
-                }
-            })
-            .collect();
-
-        for handle in other_handles {
-            self.handles.remove(&handle);
-        }
-
-        let last_index = self.objects.len() - 1;
-        self.objects.swap_remove(removed_idx);
-
-        // If we swapped the last object into the removed slot, fix any handles
-        // that pointed to the old last index.
-        if removed_idx != last_index {
-            for idx in self.handles.values_mut() {
-                if *idx == last_index {
-                    *idx = removed_idx;
-                }
-            }
+    pub fn unregister_object(&mut self, name: &str) {
+        if let Some(idx) = self.objects.iter().position(|obj| obj.name() == name) {
+            self.objects.remove(idx);
+            self.handles.retain(|_, &mut v| v != idx);
+            self.interrupt_handlers.remove(&idx);
         }
     }
 

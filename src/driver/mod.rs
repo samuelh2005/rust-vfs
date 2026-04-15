@@ -1,8 +1,11 @@
 use alloc::{boxed::Box, vec::Vec};
 use spin::{Mutex, Once};
 
+pub mod responses;
+
 use crate::OBJECT_MANAGER;
-use crate::object::command::ObjectCommandHandler;
+use crate::driver::responses::DriverResponse;
+use crate::object::Object;
 use crate::object::types::class_type_from_code;
 use crate::pci::{PCIDeviceHeader, PCIHeaderType0};
 
@@ -17,7 +20,7 @@ pub trait PciDriver: Send {
         name: &'static str,
         pci: &PCIDeviceHeader,
         func: &PCIHeaderType0,
-    ) -> Option<ObjectCommandHandler>;
+    ) -> Result<DriverResponse, ()>;
 }
 
 pub static DRIVERS: Once<Mutex<Vec<Box<dyn PciDriver>>>> = Once::new();
@@ -45,10 +48,12 @@ pub fn probe_drivers(pci_header: &PCIDeviceHeader, pci_function: &PCIHeaderType0
             // next unused numeric index for this class label by
             // inspecting registered object names in the manager.
             let class_type = class_type_from_code(class);
+            let name_static = manager.get_next_name(class_type);
 
-            let name_static = manager.register_object(class_type);
-            if let Some(handler) = driver.init(name_static, pci_header, pci_function) {
-                manager.set_object_handler(name_static, handler);
+            let response = driver.init(name_static, pci_header, pci_function);
+            if let Ok(response) = response {
+                let obj = Object::new(name_static, class_type, response.command_handler);
+                manager.register_object(obj, response.interrupt_handlers);
             }
         }
     }

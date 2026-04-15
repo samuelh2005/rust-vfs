@@ -9,7 +9,7 @@ pub mod types;
 pub type ObjectHandle = u64;
 
 pub struct Object {
-    handler: Option<ObjectCommandHandler>,
+    handler: ObjectCommandHandler,
     name: &'static str,
     obj_type: ObjectType,
 }
@@ -18,7 +18,7 @@ impl Object {
     pub fn new(
         name: &'static str,
         obj_type: ObjectType,
-        handler: Option<ObjectCommandHandler>,
+        handler: ObjectCommandHandler,
     ) -> Self {
         Object {
             handler,
@@ -40,14 +40,6 @@ impl Object {
         command: ObjectCommandID,
         data: ObjectData,
     ) -> ObjectResult<ObjectData> {
-        if let Some(handler) = self.handler {
-            (handler)(self, command, data)
-        } else {
-            Err(command::OperationError::UnsupportedOperation)
-        }
-    }
-
-    pub fn set_handler(&mut self, handler: ObjectCommandHandler) {
-        self.handler = Some(handler);
+        (self.handler)(self, command, data)
     }
 }
