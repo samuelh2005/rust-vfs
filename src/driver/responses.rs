@@ -9,11 +9,7 @@ pub enum InterruptError {
     SpuriousInterrupt,
 }
 
-pub type InterruptHandler = fn(
-    object: &Object,
-    interrupt_id: u32,
-) -> Result<(), InterruptError>;
-
+pub type InterruptHandler = fn(object: &Object, interrupt_id: u32) -> Result<(), InterruptError>;
 
 pub struct DriverResponse {
     pub command_handler: ObjectCommandHandler,

@@ -16,11 +16,7 @@ pub struct Object {
 }
 
 impl Object {
-    pub fn new(
-        name: &'static str,
-        obj_type: ObjectType,
-        handler: ObjectCommandHandler,
-    ) -> Self {
+    pub fn new(name: &'static str, obj_type: ObjectType, handler: ObjectCommandHandler) -> Self {
         Object {
             handler,
             name,

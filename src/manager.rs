@@ -1,11 +1,14 @@
 use alloc::{boxed::Box, collections::BTreeMap, format, vec::Vec};
 use log::{debug, info};
 
-use crate::{driver::responses::InterruptHandler, object::{
-    Object, ObjectHandle,
-    command::{ObjectCommandID, ObjectData, ObjectResult, OperationError},
-    types::ObjectType,
-}};
+use crate::{
+    driver::responses::InterruptHandler,
+    object::{
+        Object, ObjectHandle,
+        command::{ObjectCommandID, ObjectData, ObjectResult, OperationError},
+        types::ObjectType,
+    },
+};
 
 pub struct ObjectManager {
     objects: Vec<Box<Object>>,
@@ -32,7 +35,11 @@ impl ObjectManager {
         Box::leak(name_owned.into_boxed_str())
     }
 
-    pub fn register_object(&mut self, object: Object, interrupt_handlers: BTreeMap<u32, InterruptHandler>) {
+    pub fn register_object(
+        &mut self,
+        object: Object,
+        interrupt_handlers: BTreeMap<u32, InterruptHandler>,
+    ) {
         let obj_type = object.obj_type();
         let name = object.name();
 
@@ -44,7 +51,8 @@ impl ObjectManager {
 
         self.objects.push(Box::new(object));
 
-        self.interrupt_handlers.insert(self.objects.len() - 1, interrupt_handlers);
+        self.interrupt_handlers
+            .insert(self.objects.len() - 1, interrupt_handlers);
 
         let counter = self.type_counters.entry(obj_type).or_insert(0);
         *counter += 1;
@@ -83,11 +91,15 @@ impl ObjectManager {
             .collect()
     }
 
-    pub fn enumerate_interrupt_handlers(&self) -> Vec<(&'static str, BTreeMap<u32, InterruptHandler>)> {
+    pub fn enumerate_interrupt_handlers(
+        &self,
+    ) -> Vec<(&'static str, BTreeMap<u32, InterruptHandler>)> {
         self.interrupt_handlers
             .iter()
             .filter_map(|(idx, handlers)| {
-                self.objects.get(*idx).map(|obj| (obj.name(), handlers.clone()))
+                self.objects
+                    .get(*idx)
+                    .map(|obj| (obj.name(), handlers.clone()))
             })
             .collect()
     }

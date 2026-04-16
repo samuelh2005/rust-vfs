@@ -97,13 +97,12 @@ pub fn enumerate_pci(mcfg: *const MCFGHeader) {
         let start_bus = entry.start_bus_number;
         let end_bus = entry.end_bus_number;
 
-        debug!("Enumerating PCI Segment {} Bus {} to {}", segment, start_bus, end_bus);
-
-        enumerate_bus(
-            entry.base_address,
-            start_bus,
-            end_bus,
+        debug!(
+            "Enumerating PCI Segment {} Bus {} to {}",
+            segment, start_bus, end_bus
         );
+
+        enumerate_bus(entry.base_address, start_bus, end_bus);
     }
     info!("PCI enumeration complete.");
 }
