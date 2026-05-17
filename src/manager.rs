@@ -122,13 +122,13 @@ impl ObjectManager {
             .copied()
             .ok_or(CommandError::NotFound)?;
 
-        let command_handler = self
+        let command_handler: ObjectCommandHandler = *self
             .objects
-            .get(&object_id)
+            .get(object_id)
             .ok_or(CommandError::NotFound)?
             .as_ref()
             .ok_or(CommandError::UnsupportedOperation)?;
 
-        command_handler(&object_id, command, data)
+        command_handler(object_id, command, data)
     }
 }
