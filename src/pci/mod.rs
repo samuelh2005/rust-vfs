@@ -1,5 +1,7 @@
 use log::{debug, info};
 
+pub mod types;
+
 use crate::{
     acpi::{MCFGEntry, MCFGHeader},
     driver::probe_drivers,

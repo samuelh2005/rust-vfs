@@ -1,105 +1,98 @@
-use alloc::{boxed::Box, collections::BTreeMap, format, vec::Vec};
+use alloc::{collections::BTreeMap, vec::Vec};
 use log::{debug, info};
 
 use crate::{
     driver::responses::InterruptHandler,
     object::{
-        Object, ObjectHandle,
-        command::{ObjectCommandID, ObjectData, ObjectResult, OperationError},
-        types::ObjectType,
+        ObjectHandle, ObjectID,
+        command::{CommandData, CommandError, CommandID, CommandResult, ObjectCommandHandler},
     },
 };
 
 pub struct ObjectManager {
-    objects: Vec<Box<Object>>,
-    handles: BTreeMap<ObjectHandle, usize>,
-    type_counters: BTreeMap<ObjectType, usize>,
-    interrupt_handlers: BTreeMap<usize, BTreeMap<u32, InterruptHandler>>,
-    next_id: ObjectHandle,
+    objects: BTreeMap<ObjectID, Option<ObjectCommandHandler>>,
+    handles: BTreeMap<ObjectHandle, ObjectID>,
+    interrupt_handlers: BTreeMap<ObjectID, BTreeMap<u32, InterruptHandler>>,
+    next_handle: ObjectHandle,
 }
 
 impl ObjectManager {
     pub fn new() -> Self {
         Self {
-            objects: Vec::new(),
+            objects: BTreeMap::new(),
             handles: BTreeMap::new(),
-            type_counters: BTreeMap::new(),
             interrupt_handlers: BTreeMap::new(),
-            next_id: 1,
+            next_handle: 1,
         }
-    }
-
-    pub fn get_next_name(&self, obj_type: ObjectType) -> &'static str {
-        let idx = self.type_counters.get(&obj_type).unwrap_or(&0);
-        let name_owned = format!("{}{}", obj_type.label(), idx);
-        Box::leak(name_owned.into_boxed_str())
     }
 
     pub fn register_object(
         &mut self,
-        object: Object,
+        object: ObjectID,
         interrupt_handlers: BTreeMap<u32, InterruptHandler>,
     ) {
-        let obj_type = object.obj_type();
-        let name = object.name();
-
-        if self.objects.iter().any(|obj| obj.name() == name) {
-            panic!("Object with name '{}' already exists", name);
+        if self.objects.contains_key(&object) {
+            debug!("Object {} already registered, skipping", object);
+            return;
         }
 
-        info!("Registering object: {} (type: {:?})", name, obj_type);
-
-        self.objects.push(Box::new(object));
-
-        self.interrupt_handlers
-            .insert(self.objects.len() - 1, interrupt_handlers);
-
-        let counter = self.type_counters.entry(obj_type).or_insert(0);
-        *counter += 1;
+        debug!("Registering object: {}", object);
+        self.objects.insert(object, None);
+        self.interrupt_handlers.insert(object, interrupt_handlers);
     }
 
-    pub fn get_object(&self, id: ObjectHandle) -> Option<&Object> {
-        let idx = *self.handles.get(&id)?;
-        self.objects.get(idx).map(|obj| obj.as_ref())
+    pub fn get_object(&self, id: ObjectHandle) -> Result<ObjectID, &'static str> {
+        let object_id = self
+            .handles
+            .get(&id)
+            .copied()
+            .ok_or("Object handle not found")?;
+
+        if self.objects.contains_key(&object_id) {
+            Ok(object_id)
+        } else {
+            Err("Object not found")
+        }
     }
 
-    pub fn get_object_mut(&mut self, id: ObjectHandle) -> Option<&mut Object> {
-        let idx = *self.handles.get(&id)?;
-        self.objects.get_mut(idx).map(|obj| obj.as_mut())
+    pub fn open_object(&mut self, name: &str) -> Result<ObjectHandle, &'static str> {
+        let object_id = self
+            .objects
+            .get_key_value(name)
+            .map(|(object_id, _)| *object_id)
+            .ok_or("Object not found")?;
+
+        let handle = self.next_handle;
+        self.next_handle = self
+            .next_handle
+            .checked_add(1)
+            .ok_or("Object handle overflow")?;
+
+        debug!("Opening object: {} (handle: {})", name, handle);
+        self.handles.insert(handle, object_id);
+        Ok(handle)
     }
 
-    pub fn open_object(&mut self, name: &str) -> Option<ObjectHandle> {
-        let idx = self.objects.iter().position(|obj| obj.name() == name)?;
-
-        let id = self.next_id;
-        self.next_id += 1;
-
-        debug!("Opening object: {} (handle: {})", name, id);
-
-        self.handles.insert(id, idx);
-        Some(id)
+    pub fn enumerate_objects(&self) -> Vec<ObjectID> {
+        self.objects.keys().copied().collect()
     }
 
-    pub fn enumerate_objects(&self) -> Vec<&'static str> {
-        self.objects.iter().map(|obj| obj.name()).collect()
-    }
-
-    pub fn enumerate_handles(&self) -> Vec<(ObjectHandle, &'static str)> {
+    pub fn enumerate_handles(&self) -> Vec<(ObjectHandle, ObjectID)> {
         self.handles
             .iter()
-            .map(|(id, idx)| (*id, self.objects[*idx].name()))
+            .filter_map(|(handle, object_id)| {
+                self.objects.get(object_id).map(|_| (*handle, *object_id))
+            })
             .collect()
     }
 
-    pub fn enumerate_interrupt_handlers(
-        &self,
-    ) -> Vec<(&'static str, BTreeMap<u32, InterruptHandler>)> {
+    pub fn enumerate_interrupt_handlers(&self) -> Vec<(ObjectID, BTreeMap<u32, InterruptHandler>)> {
         self.interrupt_handlers
             .iter()
-            .filter_map(|(idx, handlers)| {
+            .filter_map(|(object_id, handlers)| {
                 self.objects
-                    .get(*idx)
-                    .map(|obj| (obj.name(), handlers.clone()))
+                    .get(object_id)
+                    .map(|_| (*object_id, handlers.clone()))
             })
             .collect()
     }
@@ -110,22 +103,32 @@ impl ObjectManager {
     }
 
     pub fn unregister_object(&mut self, name: &str) {
-        if let Some(idx) = self.objects.iter().position(|obj| obj.name() == name) {
+        if self.objects.remove(name).is_some() {
             info!("Unregistering object: {}", name);
-            self.objects.remove(idx);
-            self.handles.retain(|_, &mut v| v != idx);
-            self.interrupt_handlers.remove(&idx);
+            self.interrupt_handlers.remove(name);
+            self.handles.retain(|_, object_id| *object_id != name);
         }
     }
 
     pub fn handle_command(
         &self,
         id: ObjectHandle,
-        command: ObjectCommandID,
-        data: ObjectData,
-    ) -> ObjectResult<ObjectData> {
-        let idx = *self.handles.get(&id).ok_or(OperationError::NotFound)?;
-        let obj = self.objects.get(idx).ok_or(OperationError::NotFound)?;
-        obj.handle_command(command, data)
+        command: CommandID,
+        data: CommandData,
+    ) -> CommandResult<CommandData> {
+        let object_id = self
+            .handles
+            .get(&id)
+            .copied()
+            .ok_or(CommandError::NotFound)?;
+
+        let command_handler = self
+            .objects
+            .get(&object_id)
+            .ok_or(CommandError::NotFound)?
+            .as_ref()
+            .ok_or(CommandError::UnsupportedOperation)?;
+
+        command_handler(&object_id, command, data)
     }
 }

@@ -6,8 +6,6 @@ pub mod responses;
 
 use crate::OBJECT_MANAGER;
 use crate::driver::responses::DriverResponse;
-use crate::object::Object;
-use crate::object::types::class_type_from_code;
 use crate::pci::{PCIDeviceHeader, PCIHeaderType0};
 
 pub trait PciDriver: Send {
@@ -16,12 +14,7 @@ pub trait PciDriver: Send {
     /// Called when a matching device is found. Return an `OperationHandler`
     /// to expose the device via the VFS object manager, or `None` if the
     /// driver wants to handle the device without exposing an object.
-    fn init(
-        &self,
-        name: &'static str,
-        pci: &PCIDeviceHeader,
-        func: &PCIHeaderType0,
-    ) -> Result<DriverResponse, ()>;
+    fn init(&self, pci: &PCIDeviceHeader, func: &PCIHeaderType0) -> Result<DriverResponse, ()>;
 }
 
 pub static DRIVERS: Once<Mutex<Vec<Box<dyn PciDriver>>>> = Once::new();
@@ -49,29 +42,15 @@ pub fn probe_drivers(pci_header: &PCIDeviceHeader, pci_function: &PCIHeaderType0
                 "Probing PCI device {:04x}:{:04x} (class: {:02x}, subclass: {:02x})",
                 vendor, device, class, subclass
             );
-            // Create the canonical `<type><count>` name. Determine the
-            // next unused numeric index for this class label by
-            // inspecting registered object names in the manager.
-            let class_type = class_type_from_code(class);
-            let name_static = manager.get_next_name(class_type);
 
-            let response = driver.init(name_static, pci_header, pci_function);
+            let response = driver.init(pci_header, pci_function);
             if let Ok(response) = response {
+                let name = response.object_id;
                 info!(
                     "Initializing object {} for PCI device {:04x}:{:04x}",
-                    name_static, vendor, device
+                    name, vendor, device
                 );
-                let obj = if let Some(context) = response.context {
-                    Object::new_with_context(
-                        name_static,
-                        class_type,
-                        response.command_handler,
-                        context,
-                    )
-                } else {
-                    Object::new(name_static, class_type, response.command_handler)
-                };
-                manager.register_object(obj, response.interrupt_handlers);
+                manager.register_object(name, response.interrupt_handlers);
             }
         }
     }

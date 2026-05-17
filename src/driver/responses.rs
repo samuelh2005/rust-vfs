@@ -1,6 +1,6 @@
 use alloc::collections::btree_map::BTreeMap;
 
-use crate::object::{Object, command::ObjectCommandHandler};
+use crate::object::{ObjectID, command::ObjectCommandHandler};
 
 #[derive(Debug)]
 pub enum InterruptError {
@@ -9,10 +9,10 @@ pub enum InterruptError {
     SpuriousInterrupt,
 }
 
-pub type InterruptHandler = fn(object: &Object, interrupt_id: u32) -> Result<(), InterruptError>;
+pub type InterruptHandler = fn(object: &ObjectID, interrupt_id: u32) -> Result<(), InterruptError>;
 
 pub struct DriverResponse {
     pub command_handler: ObjectCommandHandler,
     pub interrupt_handlers: BTreeMap<u32, InterruptHandler>,
-    pub context: Option<usize>,
+    pub object_id: ObjectID,
 }
