@@ -28,11 +28,13 @@ impl core::convert::TryFrom<usize> for CommandError {
     }
 }
 
-pub enum CommandData {
-    Bytes(*const u8, usize),
+pub type CommandData = (*const u8, usize);
+
+pub enum CommandResult {
     None,
+    Some(CommandData),
+    Err(CommandError),
 }
 
-pub type CommandResult<T> = Result<T, CommandError>;
-pub type ObjectCommandHandler = fn(ObjectID, CommandID, CommandData) -> CommandResult<CommandData>;
+pub type ObjectCommandHandler = fn(ObjectID, CommandID, CommandData) -> CommandResult;
 pub type CommandID = usize;

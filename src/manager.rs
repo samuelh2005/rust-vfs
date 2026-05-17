@@ -145,13 +145,20 @@ impl ObjectManager {
         object_id: ObjectID,
         command: CommandID,
         data: CommandData,
-    ) -> CommandResult<CommandData> {
-        let command_handler: ObjectCommandHandler = *self
+    ) -> CommandResult {
+        if !self.objects.contains_key(object_id) {
+            return CommandResult::Err(CommandError::NotFound);
+        }
+
+        let object = self
             .objects
             .get(object_id)
-            .ok_or(CommandError::NotFound)?
-            .as_ref()
-            .ok_or(CommandError::UnsupportedOperation)?;
+            .expect("object existence was checked above");
+
+        let command_handler: ObjectCommandHandler = match object {
+            Some(handler) => *handler,
+            None => return CommandResult::Err(CommandError::UnsupportedOperation),
+        };
 
         command_handler(object_id, command, data)
     }
