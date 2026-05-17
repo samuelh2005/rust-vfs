@@ -50,7 +50,7 @@ pub fn probe_drivers(pci_header: &PCIDeviceHeader, pci_function: &PCIHeaderType0
                     "Initializing object {} for PCI device {:04x}:{:04x}",
                     name, vendor, device
                 );
-                manager.register_object(name, response.interrupt_handlers);
+                manager.register_object_commands(name, response.command_handler, response.interrupt_handlers);
             }
         }
     }

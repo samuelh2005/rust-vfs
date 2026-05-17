@@ -41,6 +41,22 @@ impl ObjectManager {
         self.interrupt_handlers.insert(object, interrupt_handlers);
     }
 
+    pub fn register_object_commands(
+        &mut self,
+        object: ObjectID,
+        command_handler: ObjectCommandHandler,
+        interrupt_handlers: BTreeMap<u32, InterruptHandler>,
+    ) {
+        if self.objects.contains_key(&object) {
+            debug!("Object {} already registered, skipping", object);
+            return;
+        }
+
+        debug!("Registering object: {}", object);
+        self.objects.insert(object, Some(command_handler));
+        self.interrupt_handlers.insert(object, interrupt_handlers);
+    }
+
     pub fn get_object(&self, id: ObjectHandle) -> Result<ObjectID, &'static str> {
         let object_id = self
             .handles
