@@ -126,18 +126,26 @@ impl ObjectManager {
         }
     }
 
+    pub fn get_handle_object(&self, handle: ObjectHandle) -> Result<ObjectID, &'static str> {
+        let object_id = self
+            .handles
+            .get(&handle)
+            .copied()
+            .ok_or("Object handle not found")?;
+
+        if self.objects.contains_key(&object_id) {
+            Ok(object_id)
+        } else {
+            Err("Object not found")
+        }
+    }
+
     pub fn handle_command(
         &self,
-        id: ObjectHandle,
+        object_id: ObjectID,
         command: CommandID,
         data: CommandData,
     ) -> CommandResult<CommandData> {
-        let object_id = self
-            .handles
-            .get(&id)
-            .copied()
-            .ok_or(CommandError::NotFound)?;
-
         let command_handler: ObjectCommandHandler = *self
             .objects
             .get(object_id)
