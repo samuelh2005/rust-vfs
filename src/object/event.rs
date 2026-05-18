@@ -2,10 +2,16 @@ use crate::object::ObjectID;
 
 pub type ObjectEventType = usize;
 
-pub struct ObjectEvent {
-    pub event_type: ObjectEventType,
-    pub object_id: ObjectID
+#[derive(Copy, Clone, Debug)]
+pub enum EventFilter {
+    None,
+    Specific((ObjectID, ObjectEventType)),
 }
 
-pub type EventCallback = fn(event: ObjectEvent);
+#[derive(Copy, Clone, Debug)]
+pub struct EventCallback {
+    pub filter: EventFilter,
+    pub callback: fn(object_id: ObjectID, event_type: ObjectEventType)
+}
+
 pub type EventCallbackID = usize;
