@@ -17,8 +17,19 @@ impl TryFrom<usize> for NetworkCommands {
     }
 }
 
-#[repr(usize)]
 pub enum NetworkEvents {
     PacketReceived = 0,
     PacketSent = 1,
+}
+
+impl TryFrom<usize> for NetworkEvents {
+    type Error = ();
+
+    fn try_from(value: usize) -> Result<Self, Self::Error> {
+        match value {
+            0 => Ok(NetworkEvents::PacketReceived),
+            1 => Ok(NetworkEvents::PacketSent),
+            _ => Err(()),
+        }
+    }
 }

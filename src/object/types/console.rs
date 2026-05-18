@@ -17,8 +17,19 @@ impl TryFrom<usize> for ConsoleCommands {
     }
 }
 
-#[repr(usize)]
 pub enum ConsoleEvents {
     ConsoleInputAvailable = 0,
     ConsoleReadyForOutput = 1,
+}
+
+impl TryFrom<usize> for ConsoleEvents {
+    type Error = ();
+
+    fn try_from(value: usize) -> Result<Self, Self::Error> {
+        match value {
+            0 => Ok(ConsoleEvents::ConsoleInputAvailable),
+            1 => Ok(ConsoleEvents::ConsoleReadyForOutput),
+            _ => Err(()),
+        }
+    }
 }
