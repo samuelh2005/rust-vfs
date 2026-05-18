@@ -5,7 +5,7 @@ use crate::{
     driver::responses::InterruptHandler,
     object::{
         ObjectHandle, ObjectID,
-        command::{CommandData, CommandError, CommandID, CommandResult, ObjectCommandHandler},
+        command::{CommandData, CommandError, CommandID, CommandResult, ObjectCommandHandler}, event::{EventCallback, EventCallbackID, ObjectEventType},
     },
 };
 
@@ -13,6 +13,7 @@ pub struct ObjectManager {
     objects: BTreeMap<ObjectID, Option<ObjectCommandHandler>>,
     handles: BTreeMap<ObjectHandle, ObjectID>,
     interrupt_handlers: BTreeMap<ObjectID, BTreeMap<u32, InterruptHandler>>,
+    event_handlers: BTreeMap<ObjectID, BTreeMap<(EventCallbackID, ObjectEventType), EventCallback>>,
     next_handle: ObjectHandle,
 }
 
@@ -22,6 +23,7 @@ impl ObjectManager {
             objects: BTreeMap::new(),
             handles: BTreeMap::new(),
             interrupt_handlers: BTreeMap::new(),
+            event_handlers: BTreeMap::new(),
             next_handle: 1,
         }
     }
@@ -138,6 +140,50 @@ impl ObjectManager {
         } else {
             Err("Object not found")
         }
+    }
+
+    pub fn register_event_handler(&mut self, object_id: ObjectID, callback: EventCallback, event_type: usize) -> Result<EventCallbackID, &'static str> {
+        if !self.objects.contains_key(&object_id) {
+            return Err("Object not found");
+        }
+
+        let callback_id = self
+            .event_handlers
+            .entry(object_id)
+            .or_insert_with(BTreeMap::new)
+            .keys()
+            .map(|(id, _)| *id)
+            .max()
+            .unwrap_or(0)
+            .checked_add(1)
+            .ok_or("Event callback ID overflow")?;
+
+        self.event_handlers
+            .entry(object_id)
+            .or_insert_with(BTreeMap::new)
+            .insert((callback_id, event_type), callback);
+        Ok(callback_id)
+    }
+
+    pub fn unregister_event_handler(&mut self, object_id: ObjectID, callback_id: EventCallbackID) -> Result<(), &'static str> {
+        if let Some(handlers) = self.event_handlers.get_mut(&object_id) {
+            handlers.retain(|(id, _), _| *id != callback_id);
+            Ok(())
+        } else {
+            Err("Object not found")
+        }
+    }
+
+    pub fn get_event_handlers(&self, object_id: ObjectID, event_type: ObjectEventType) -> Vec<EventCallback> {
+        self.event_handlers
+            .get(&object_id)
+            .map(|handlers| {
+                handlers
+                    .iter()
+                    .filter_map(|((_, et), callback)| if *et == event_type { Some(*callback) } else { None })
+                    .collect()
+            })
+            .unwrap_or_default()
     }
 
     pub fn handle_command(

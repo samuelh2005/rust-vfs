@@ -1,8 +1,5 @@
 use crate::object::ObjectID;
 
-pub mod console;
-pub mod network;
-
 #[repr(usize)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CommandError {

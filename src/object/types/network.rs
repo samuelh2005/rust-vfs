@@ -16,3 +16,9 @@ impl TryFrom<usize> for NetworkCommands {
         }
     }
 }
+
+#[repr(usize)]
+pub enum NetworkEvents {
+    PacketReceived = 0,
+    PacketSent = 1,
+}

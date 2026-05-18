@@ -16,3 +16,9 @@ impl TryFrom<usize> for ConsoleCommands {
         }
     }
 }
+
+#[repr(usize)]
+pub enum ConsoleEvents {
+    ConsoleInputAvailable = 0,
+    ConsoleReadyForOutput = 1,
+}
