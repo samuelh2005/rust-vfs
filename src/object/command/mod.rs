@@ -31,7 +31,7 @@ impl core::convert::TryFrom<usize> for CommandError {
 pub type CommandData = (*const u8, usize);
 
 pub enum CommandResult {
-    None,
+    Empty,
     Some(CommandData),
     Err(CommandError),
 }
