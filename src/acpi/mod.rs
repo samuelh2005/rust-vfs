@@ -43,6 +43,12 @@ pub struct MCFGEntry {
     pub reserved: [u8; 4],
 }
 
+/// Search an ACPI table for a child table matching `signature`.
+///
+/// # Safety
+/// `sdt_header` must reference a valid ACPI system description table whose
+/// trailing entries are readable and contain either null or valid physical
+/// addresses for ACPI tables.
 pub unsafe fn find_table_by_sig(
     sdt_header: &SDTHeader,
     signature: [u8; 4],
@@ -66,9 +72,14 @@ pub unsafe fn find_table_by_sig(
     None
 }
 
+/// Enumerate all ACPI-backed subsystems we currently understand.
+///
+/// # Safety
+/// `xsdt` must point to a valid XSDT whose entries are readable for the
+/// duration of this call.
 pub unsafe fn enumerate_acpi(xsdt: &SDTHeader) {
     if let Some(mcfg_hdr) = unsafe { find_table_by_sig(xsdt, *b"MCFG") } {
         let mcfg = mcfg_hdr as *const _ as *const MCFGHeader;
-        crate::pci::enumerate_pci(mcfg);
+        unsafe { crate::pci::enumerate_pci(mcfg) };
     }
 }

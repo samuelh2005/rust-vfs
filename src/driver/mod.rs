@@ -5,7 +5,7 @@ use spin::{Mutex, Once};
 pub mod responses;
 
 use crate::OBJECT_MANAGER;
-use crate::driver::responses::DriverResponse;
+use crate::driver::responses::{DriverError, DriverResponse};
 use crate::pci::{PCIDeviceHeader, PCIHeaderType0};
 
 pub trait PciDriver: Send {
@@ -14,7 +14,7 @@ pub trait PciDriver: Send {
     /// Called when a matching device is found. Return an `OperationHandler`
     /// to expose the device via the VFS object manager, or `None` if the
     /// driver wants to handle the device without exposing an object.
-    fn init(&self, pci: &PCIDeviceHeader, func: &PCIHeaderType0) -> Result<DriverResponse, ()>;
+    fn init(&self, pci: &PCIDeviceHeader, func: &PCIHeaderType0) -> Result<DriverResponse, DriverError>;
 }
 
 pub static DRIVERS: Once<Mutex<Vec<Box<dyn PciDriver>>>> = Once::new();

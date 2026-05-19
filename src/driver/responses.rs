@@ -9,6 +9,12 @@ pub enum InterruptError {
     SpuriousInterrupt,
 }
 
+#[derive(Debug)]
+pub enum DriverError {
+    UnsupportedDevice,
+    InitializationFailed,
+}
+
 pub type InterruptHandler = fn(object: &ObjectID, interrupt_id: u32) -> Result<(), InterruptError>;
 
 pub struct DriverResponse {

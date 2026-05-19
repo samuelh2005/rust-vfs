@@ -167,7 +167,7 @@ impl ObjectManager {
         self.event_handlers.values().copied().collect()
     }
 
-    pub fn handle_command(
+pub fn handle_command(
         &self,
         object_id: ObjectID,
         command: CommandID,
@@ -188,5 +188,11 @@ impl ObjectManager {
         };
 
         command_handler(object_id, command, data)
+    }
+}
+
+impl Default for ObjectManager {
+    fn default() -> Self {
+        Self::new()
     }
 }

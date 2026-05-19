@@ -48,7 +48,7 @@ pub fn enumerate_function(device_header: &PCIDeviceHeader, function_address: u64
 
     let full_header = unsafe { &*(function_address as *const PCIHeaderType0) };
 
-    probe_drivers(device_header, &full_header);
+    probe_drivers(device_header, full_header);
 }
 
 pub fn enumerate_device(bus_address: u64, device: u64) {
@@ -81,7 +81,12 @@ pub fn enumerate_bus(base_address: u64, start_bus: u8, end_bus: u8) {
     }
 }
 
-pub fn enumerate_pci(mcfg: *const MCFGHeader) {
+/// Enumerate PCI devices using the ACPI MCFG table.
+///
+/// # Safety
+/// `mcfg` must point to a valid, readable `MCFGHeader` followed by a
+/// well-formed set of `MCFGEntry` values for the duration of this call.
+pub unsafe fn enumerate_pci(mcfg: *const MCFGHeader) {
     info!("Starting PCI enumeration via MCFG...");
     let mcfg = unsafe { &*mcfg };
 
